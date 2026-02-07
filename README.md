@@ -183,6 +183,51 @@ feature("Auth", () => {
 });
 ```
 
+## Browser tests (Playwright)
+
+Works with `@vitest/browser` + Playwright. No special API — `e2e` gives you 120s timeout:
+
+```ts
+import { e2e, feature, rule, expect } from "bdd-vitest";
+import { page } from "@vitest/browser/context";
+
+feature("Ship AI — Bridge Console", () => {
+  rule("authentication", () => {
+    e2e("Kai logs in with commander clearance", {
+      given: ["the login screen", async () => {
+        await page.goto("/bridge/login");
+      }],
+      when: ["submitting commander credentials", async () => {
+        await page.getByLabel("Crew ID").fill("kai");
+        await page.getByLabel("Access code").fill("clearance-9");
+        await page.getByRole("button", { name: "Authenticate" }).click();
+      }],
+      then: ["the bridge dashboard loads", async () => {
+        await expect.element(page.getByText("Welcome, Commander Kai")).toBeVisible();
+        expect(page.url()).toContain("/bridge/dashboard");
+      }],
+    });
+  });
+
+  rule("navigation controls", () => {
+    e2e("Yara plots a course from the bridge", {
+      given: ["Yara is on the navigation panel", async () => {
+        await page.goto("/bridge/navigation");
+        await expect.element(page.getByText("Navigation")).toBeVisible();
+      }],
+      when: ["plotting a course to Proxima", async () => {
+        await page.getByLabel("Destination").fill("Proxima Centauri");
+        await page.getByRole("button", { name: "Plot course" }).click();
+      }],
+      then: ["the course is confirmed", async () => {
+        await expect.element(page.getByText("Course set: Proxima Centauri")).toBeVisible();
+        await expect.element(page.getByText("ETA:")).toBeVisible();
+      }],
+    });
+  });
+});
+```
+
 ## Real world example
 
 ```ts
