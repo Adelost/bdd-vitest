@@ -44,7 +44,7 @@ import { unit, component, integration, e2e } from "bdd-vitest";
 |-------|---------|-------------------|
 | `unit` | 100ms | Pure functions, calculations, parsing, validation |
 | `component` | 5s | One service with mocked deps (mockServer, mockFetch) |
-| `integration` | 30s | Multiple real services talking to each other |
+| `integration` | 30s | Real services, real files, real I/O |
 | `e2e` | 120s | Full system, browser, real network, real database |
 
 ```
