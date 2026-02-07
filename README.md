@@ -1,6 +1,6 @@
 # bdd-vitest
 
-Enforced Given/When/Then for Vitest. Tests become documentation. Zero config.
+Enforced Given/When/Then for Vitest. Tests become documentation. ~200 lines. Zero config.
 
 ```ts
 import { unit, feature, expect } from "bdd-vitest";
@@ -18,7 +18,7 @@ Read just the descriptions. You understand the system without opening production
 
 ## Why
 
-Most test frameworks let you write `it("does something", () => {})` with no structure inside. AI agents skip descriptions. Tired humans skip assertions. Tests pass but prove nothing.
+Most test frameworks let you write `it("does something", () => {})` with no structure inside. AI agents (and tired humans) skip descriptions, skip assertions, write tests that pass but prove nothing.
 
 bdd-vitest makes it impossible:
 
@@ -40,12 +40,12 @@ Every test must declare its level. Wrong level => timeout fails the test. Slow f
 import { unit, component, integration, e2e } from "bdd-vitest";
 ```
 
-| Level | Timeout | What belongs here |
-|-------|---------|-------------------|
-| `unit` | 100ms | Pure functions, calculations, parsing, validation |
-| `component` | 5s | One service with mocked deps (mockServer, mockFetch) |
-| `integration` | 30s | Real services, real files, real I/O |
-| `e2e` | 120s | Full system, browser, real network, real database |
+| Level | Warning | Timeout | Use for |
+|-------|---------|---------|---------| 
+| `unit` | 50ms | 100ms | Pure logic, no I/O |
+| `component` | 2s | 5s | Service in isolation, mocked deps |
+| `integration` | 15s | 30s | Multiple services, real deps |
+| `e2e` | 60s | 120s | Full system, browser, network |
 
 ```
 ⚠️  [unit] "parse config" took 80ms (warn: 50ms, limit: 100ms). Is this a component test?
