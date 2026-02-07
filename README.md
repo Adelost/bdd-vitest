@@ -1,6 +1,6 @@
 # bdd-vitest
 
-Enforced Given/When/Then for Vitest. Tests become documentation. ~200 lines. Zero config.
+Enforced Given/When/Then for Vitest. Tests become documentation. Zero config.
 
 ```ts
 import { unit, feature, expect } from "bdd-vitest";
