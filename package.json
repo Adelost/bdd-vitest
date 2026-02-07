@@ -1,0 +1,75 @@
+{
+  "name": "bdd-vitest",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Enforced Given/When/Then for Vitest. ~200 lines. Zero config.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AdelOst/bdd-vitest"
+  },
+  "keywords": [
+    "vitest",
+    "bdd",
+    "given-when-then",
+    "testing",
+    "scenario",
+    "behavior-driven"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./mock-ai": {
+      "import": "./dist/mock-ai.js",
+      "types": "./dist/mock-ai.d.ts"
+    },
+    "./service": {
+      "import": "./dist/service.js",
+      "types": "./dist/service.d.ts"
+    },
+    "./process": {
+      "import": "./dist/process.js",
+      "types": "./dist/process.d.ts"
+    },
+    "./levels": {
+      "import": "./dist/levels.js",
+      "types": "./dist/levels.d.ts"
+    },
+    "./mock-server": {
+      "import": "./dist/mock-server.js",
+      "types": "./dist/mock-server.d.ts"
+    },
+    "./mock-fetch": {
+      "import": "./dist/mock-fetch.js",
+      "types": "./dist/mock-fetch.d.ts"
+    },
+    "./preset": {
+      "import": "./dist/preset.js",
+      "types": "./dist/preset.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "vitest": ">=2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.1",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build && pnpm test"
+  }
+}

@@ -1,0 +1,18 @@
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  entry: {
+    index: "src/index.ts",
+    "mock-ai": "src/mock-ai.ts",
+    "mock-server": "src/mock-server.ts",
+    "mock-fetch": "src/mock-fetch.ts",
+    levels: "src/levels.ts",
+    service: "src/service.ts",
+    process: "src/process.ts",
+    preset: "src/preset.ts",
+  },
+  format: ["esm"],
+  dts: true,
+  clean: true,
+  external: ["vitest", "vitest/config"],
+});
