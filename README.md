@@ -185,13 +185,13 @@ feature("Auth", () => {
 
 ## Browser tests (Playwright)
 
-Works with `@vitest/browser` + Playwright. No special API — `e2e` gives you 120s timeout:
+Works with `@vitest/browser` + Playwright. No special API - `e2e` gives you 120s timeout:
 
 ```ts
 import { e2e, feature, rule, expect } from "bdd-vitest";
 import { page } from "@vitest/browser/context";
 
-feature("Ship AI — Bridge Console", () => {
+feature("Ship AI - Bridge Console", () => {
   rule("authentication", () => {
     e2e("Kai logs in with commander clearance", {
       given: ["the login screen", async () => {
