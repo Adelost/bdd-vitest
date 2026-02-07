@@ -189,24 +189,24 @@ feature("Auth", () => {
 import { unit, component, integration, feature, rule, expect } from "bdd-vitest";
 import { mockServer } from "bdd-vitest/mock-server";
 
-feature("HAL 9000", () => {
-  rule("pod bay door access", () => {
-    unit("denies access without clearance", {
-      given: ["a crew member with no override", () => ({ crew: "Dave", clearance: 0 })],
-      when:  ["requesting pod bay doors",       (ctx) => hal.evaluateRequest(ctx)],
-      then:  ["denies the request",             (res) => {
+feature("Ship AI", () => {
+  rule("airlock access", () => {
+    unit("denies crew without clearance", {
+      given: ["a crew member with no override", () => ({ crew: "Kai", clearance: 0 })],
+      when:  ["requesting airlock",              (ctx) => shipAI.evaluateRequest(ctx)],
+      then:  ["denies the request",              (res) => {
         expect(res.granted).toBe(false);
-        expect(res.message).toContain("I'm afraid I can't do that");
+        expect(res.reason).toContain("insufficient clearance");
       }],
     });
 
     unit.outline("clearance levels", [
-      { name: "tourist: denied",    clearance: 0, expected: false },
-      { name: "engineer: denied",   clearance: 1, expected: false },
+      { name: "cadet: denied",     clearance: 0, expected: false },
+      { name: "engineer: denied",  clearance: 1, expected: false },
       { name: "commander: granted", clearance: 9, expected: true },
     ], {
-      given: (row) => ({ crew: "Dave", clearance: row.clearance as number }),
-      when:  (ctx) => hal.evaluateRequest(ctx),
+      given: (row) => ({ crew: "Kai", clearance: row.clearance as number }),
+      when:  (ctx) => shipAI.evaluateRequest(ctx),
       then:  (res, _ctx, row) => expect(res.granted).toBe(row.expected),
     });
   });
@@ -214,18 +214,18 @@ feature("HAL 9000", () => {
   rule("crew monitoring API", () => {
     component("reports life signs", {
       given: ["a sensor API", mockServer({
-        "GET /crew/dave/vitals": { heartRate: 72, o2: 98, status: "nominal" },
+        "GET /crew/kai/vitals": { heartRate: 72, o2: 98, status: "nominal" },
       })],
-      when:    ["checking vitals", (server) => hal.checkCrew("dave", server.url)],
+      when:    ["checking vitals", (server) => shipAI.checkCrew("kai", server.url)],
       then:    ["reports nominal",  (report) => expect(report.status).toBe("nominal")],
       cleanup: (server) => server.close(),
     });
 
     component("handles sensor failure", {
       given: ["a failing sensor API", mockServer({
-        "GET /crew/dave/vitals": 503,
+        "GET /crew/kai/vitals": 503,
       })],
-      when:    ["checking vitals", (server) => hal.checkCrew("dave", server.url)],
+      when:    ["checking vitals", (server) => shipAI.checkCrew("kai", server.url)],
       then:    ["triggers alert",  (report) => expect(report.status).toBe("sensor_failure")],
       cleanup: (server) => server.close(),
     });
@@ -235,8 +235,8 @@ feature("HAL 9000", () => {
     integration("logs all crew requests", {
       given: ["a mission database", async () => {
         const db = await createMissionDb();
-        await hal.processRequest(db, { crew: "Dave", action: "open_pod_bay" });
-        await hal.processRequest(db, { crew: "Frank", action: "check_antenna" });
+        await shipAI.logRequest(db, { crew: "Kai", action: "open_airlock" });
+        await shipAI.logRequest(db, { crew: "Yara", action: "check_antenna" });
         return db;
       }],
       when:    ["querying the log",   (db) => db.logs.findAll()],
