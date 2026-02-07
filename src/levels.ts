@@ -15,7 +15,9 @@
  */
 
 import { describe, it } from "vitest";
-import type { Phase } from "./index.js";
+
+/** Phase: [description, function] tuple — description is enforced */
+export type Phase<TFn> = [desc: string, fn: TFn];
 
 // --- Level config ---
 
@@ -48,46 +50,52 @@ export interface LevelScenario<TContext, TResult> {
   slow?: boolean;
 }
 
+async function executeScenario<TContext, TResult>(
+  name: string,
+  phases: LevelScenario<TContext, TResult>,
+  level: LevelConfig,
+): Promise<void> {
+  const start = performance.now();
+  let phase = "given";
+  let context: TContext = undefined as TContext;
+
+  try {
+    if (phases.given && typeof phases.given !== "string") {
+      context = await phases.given[1]();
+    }
+    phase = "when";
+    const result = phases.when
+      ? await phases.when[1](context)
+      : (context as unknown as TResult);
+    phase = "then";
+    await phases.then[1](result, context);
+  } catch (error) {
+    if (error instanceof Error && !error.message.startsWith("[")) {
+      error.message = `[${phase}] ${error.message}`;
+    }
+    throw error;
+  } finally {
+    if (phases.cleanup) {
+      await phases.cleanup(context);
+    }
+  }
+
+  const elapsed = performance.now() - start;
+  const warnAt = level.warnAt ?? level.timeout * 0.5;
+  if (!phases.slow && elapsed > warnAt) {
+    const next = level.nextLevel ? ` Is this a ${level.nextLevel} test?` : "";
+    console.warn(
+      `⚠️  [${level.name}] "${name}" took ${Math.round(elapsed)}ms (warn: ${warnAt}ms, limit: ${level.timeout}ms).${next}`,
+    );
+  }
+}
+
 function createLevelRunner(level: LevelConfig) {
   function run<TContext, TResult>(
     name: string,
     phases: LevelScenario<TContext, TResult>,
   ): void {
-    it(name, { timeout: level.timeout }, async () => {
-      const start = performance.now();
-      let phase = "given";
-      let context: TContext = undefined as TContext;
-
-      try {
-        if (phases.given && typeof phases.given !== "string") {
-          context = await phases.given[1]();
-        }
-        phase = "when";
-        const result = phases.when
-          ? await phases.when[1](context)
-          : (context as unknown as TResult);
-        phase = "then";
-        await phases.then[1](result, context);
-      } catch (error) {
-        if (error instanceof Error && !error.message.startsWith("[")) {
-          error.message = `[${phase}] ${error.message}`;
-        }
-        throw error;
-      } finally {
-        if (phases.cleanup) {
-          await phases.cleanup(context);
-        }
-      }
-
-      const elapsed = performance.now() - start;
-      const warnAt = level.warnAt ?? level.timeout * 0.5;
-      if (!phases.slow && elapsed > warnAt) {
-        const next = level.nextLevel ? ` Is this a ${level.nextLevel} test?` : "";
-        console.warn(
-          `⚠️  [${level.name}] "${name}" took ${Math.round(elapsed)}ms (warn: ${warnAt}ms, limit: ${level.timeout}ms).${next}`,
-        );
-      }
-    });
+    it(name, { timeout: level.timeout }, () => executeScenario(name, phases, level));
   }
 
   // .skip and .only variants
@@ -102,30 +110,7 @@ function createLevelRunner(level: LevelConfig) {
     name: string,
     phases: LevelScenario<TContext, TResult>,
   ): void {
-    it.only(name, { timeout: level.timeout }, async () => {
-      let phase = "given";
-      let context: TContext = undefined as TContext;
-      try {
-        if (phases.given && typeof phases.given !== "string") {
-          context = await phases.given[1]();
-        }
-        phase = "when";
-        const result = phases.when
-          ? await phases.when[1](context)
-          : (context as unknown as TResult);
-        phase = "then";
-        await phases.then[1](result, context);
-      } catch (error) {
-        if (error instanceof Error && !error.message.startsWith("[")) {
-          error.message = `[${phase}] ${error.message}`;
-        }
-        throw error;
-      } finally {
-        if (phases.cleanup) {
-          await phases.cleanup(context);
-        }
-      }
-    });
+    it.only(name, { timeout: level.timeout }, () => executeScenario(name, phases, level));
   };
 
   return run;
@@ -158,6 +143,8 @@ export interface LevelRunner {
       given: (row: TRow) => TContext | Promise<TContext>;
       when: (context: TContext, row: TRow) => TResult | Promise<TResult>;
       then: (result: TResult, context: TContext, row: TRow) => void | Promise<void>;
+      cleanup?: (context: TContext) => void | Promise<void>;
+      slow?: boolean;
     },
   ) => void;
 }
@@ -170,14 +157,42 @@ function createLevelOutline(level: LevelConfig) {
       given: (row: TRow) => TContext | Promise<TContext>;
       when: (context: TContext, row: TRow) => TResult | Promise<TResult>;
       then: (result: TResult, context: TContext, row: TRow) => void | Promise<void>;
+      cleanup?: (context: TContext) => void | Promise<void>;
+      slow?: boolean;
     },
   ): void {
     describe(`[${level.name}] ${name}`, () => {
       for (const row of table) {
         it(row.name, { timeout: level.timeout }, async () => {
-          const context = await phases.given(row);
-          const result = await phases.when(context, row);
-          await phases.then(result, context, row);
+          const start = performance.now();
+          let phase = "given";
+          let context: TContext = undefined as TContext;
+
+          try {
+            context = await phases.given(row);
+            phase = "when";
+            const result = await phases.when(context, row);
+            phase = "then";
+            await phases.then(result, context, row);
+          } catch (error) {
+            if (error instanceof Error && !error.message.startsWith("[")) {
+              error.message = `[${phase}] ${error.message}`;
+            }
+            throw error;
+          } finally {
+            if (phases.cleanup) {
+              await phases.cleanup(context);
+            }
+          }
+
+          const elapsed = performance.now() - start;
+          const warnAt = level.warnAt ?? level.timeout * 0.5;
+          if (!phases.slow && elapsed > warnAt) {
+            const next = level.nextLevel ? ` Is this a ${level.nextLevel} test?` : "";
+            console.warn(
+              `⚠️  [${level.name}] "${row.name}" took ${Math.round(elapsed)}ms (warn: ${warnAt}ms, limit: ${level.timeout}ms).${next}`,
+            );
+          }
         });
       }
     });

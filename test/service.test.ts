@@ -1,9 +1,9 @@
-import { describe, expect } from "vitest";
-import { feature, scenario, scenarioWithCleanup } from "../src/index.js";
+import { expect } from "vitest";
+import { feature, unit, component } from "../src/index.js";
 import { startService, startCluster, autoCleanup, measureMs, assertPerformance } from "../src/service.js";
 
 feature("startService()", () => {
-  scenarioWithCleanup("starts a process and waits for ready signal", {
+  component("starts a process and waits for ready signal", {
     given: ["a node HTTP server", () =>
       startService({
         name: "echo-server",
@@ -25,7 +25,7 @@ feature("startService()", () => {
     cleanup: (srv) => srv.stop(),
   });
 
-  scenario("throws if process exits before ready", {
+  component("throws if process exits before ready", {
     when: ["starting a process that exits immediately", () =>
       startService({
         name: "failing",
@@ -41,7 +41,7 @@ feature("startService()", () => {
     }],
   });
 
-  scenario("throws if ready signal not seen in time", {
+  component("throws if ready signal not seen in time", {
     when: ["starting a process that never becomes ready", () =>
       startService({
         name: "slow-starter",
@@ -59,7 +59,7 @@ feature("startService()", () => {
 });
 
 feature("measureMs()", () => {
-  scenario("measures async operation time", {
+  component("measures async operation time", {
     when: ["timing a 50ms operation", () => measureMs(async () => {
       await new Promise((r) => setTimeout(r, 50));
       return 42;
@@ -73,7 +73,7 @@ feature("measureMs()", () => {
 });
 
 feature("assertPerformance()", () => {
-  scenario("passes when within limits", {
+  unit("passes when within limits", {
     given: ["a mock service with 500ms startup and 50MB memory", () => ({
       name: "test",
       pid: 1,
@@ -92,7 +92,7 @@ feature("assertPerformance()", () => {
     then: ["no error thrown", (result) => expect(result).toBe("ok")],
   });
 
-  scenario("throws when startup too slow", {
+  unit("throws when startup too slow", {
     given: ["a mock service with 5000ms startup", () => ({
       name: "slow",
       pid: 1,

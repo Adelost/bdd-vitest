@@ -1,8 +1,8 @@
-import { feature, scenario, scenarioWithCleanup, expect } from "../src/index";
+import { feature, expect, component } from "../src/index";
 import { mockServer } from "../src/mock-server";
 
 feature("mockServer", () => {
-  scenarioWithCleanup("serves JSON with implicit 200", {
+  component("serves JSON with implicit 200", {
     given: ["a mock API", mockServer({
       "GET /users": { status: 200, body: [{ name: "Alice" }, { name: "Bob" }] },
     })],
@@ -16,7 +16,7 @@ feature("mockServer", () => {
     cleanup: (server) => server.close(),
   });
 
-  scenarioWithCleanup("returns sequential responses", {
+  component("returns sequential responses", {
     given: ["an API that fails then succeeds", mockServer({
       "POST /submit": [
         { status: 503, body: { error: "overloaded" } },
@@ -35,7 +35,7 @@ feature("mockServer", () => {
     cleanup: (server) => server.close(),
   });
 
-  scenarioWithCleanup("returns status-only response", {
+  component("returns status-only response", {
     given: ["a delete endpoint", mockServer({
       "DELETE /users/1": 204,
     })],
@@ -48,7 +48,7 @@ feature("mockServer", () => {
     cleanup: (server) => server.close(),
   });
 
-  scenarioWithCleanup("tracks calls and request bodies", {
+  component("tracks calls and request bodies", {
     given: ["an echo endpoint", mockServer({
       "POST /echo": { received: true },
     })],
@@ -75,7 +75,7 @@ feature("mockServer", () => {
     cleanup: (server) => server.close(),
   });
 
-  scenarioWithCleanup("404 for unmocked routes", {
+  component("404 for unmocked routes", {
     given: ["a server with one route", mockServer({
       "GET /exists": { ok: true },
     })],

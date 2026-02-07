@@ -82,6 +82,18 @@ e2e.group("full system", () => {
   });
 });
 
+// --- outline with cleanup ---
+
+unit.outline("outline with cleanup", [
+  { name: "first", x: 1 },
+  { name: "second", x: 2 },
+], {
+  given: (row) => row.x as number,
+  when:  (ctx) => ctx + 10,
+  then:  (result, _ctx, row) => expect(result).toBe((row.x as number) + 10),
+  cleanup: () => { /* verify no throw */ },
+});
+
 // --- skip ---
 
 unit.skip("this should be skipped", {

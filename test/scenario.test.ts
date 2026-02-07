@@ -1,23 +1,22 @@
-import { describe, expect } from "vitest";
+import { expect } from "vitest";
 import {
   feature,
-  scenario,
-  scenarioOutline,
-  scenarioWithCleanup,
+  unit,
+  component,
   rule,
 } from "../src/index.js";
 import { createMockProvider, createMockAuthProfiles } from "../src/mock-ai.js";
 
-// === Core: scenario with enforced descriptions ===
+// === Core: enforced descriptions ===
 
-feature("scenario()", () => {
-  scenario("enforces Given/When/Then flow", {
+feature("unit()", () => {
+  unit("enforces Given/When/Then flow", {
     given: ["a value of 42", () => ({ value: 42 })],
     when:  ["doubling it", (ctx) => ctx.value * 2],
     then:  ["result is 84", (result) => expect(result).toBe(84)],
   });
 
-  scenario("supports async phases", {
+  unit("supports async phases", {
     given: ["an async setup", async () => {
       await new Promise((r) => setTimeout(r, 1));
       return { ready: true };
@@ -26,7 +25,7 @@ feature("scenario()", () => {
     then:  ["it is ready", (result) => expect(result).toBe(true)],
   });
 
-  scenario("passes context to then", {
+  unit("passes context to then", {
     given: ["a greeting", () => ({ original: "hello" })],
     when:  ["uppercasing it", (ctx) => ctx.original.toUpperCase()],
     then:  ["result is uppercased and original preserved", (result, ctx) => {
@@ -38,34 +37,34 @@ feature("scenario()", () => {
 
 // === Partial phases ===
 
-feature("scenario() partial phases", () => {
-  scenario("given + then (no when)", {
+feature("partial phases", () => {
+  unit("given + then (no when)", {
     given: ["a list with 3 items", () => [1, 2, 3]],
     then:  ["it has length 3", (result) => expect(result).toHaveLength(3)],
   });
 
-  scenario("when + then (no given)", {
+  unit("when + then (no given)", {
     when: ["adding 40 + 2", () => 40 + 2],
     then: ["result is 42", (result) => expect(result).toBe(42)],
   });
 
-  scenario("then only (pure assertion)", {
+  unit("then only (pure assertion)", {
     then: ["true is true", () => expect(true).toBe(true)],
   });
 
-  scenario("given as description-only string", {
+  unit("given as description-only string", {
     given: "a running server with mocked auth",
     when:  ["requesting health", () => ({ status: 200 })],
     then:  ["returns 200", (res) => expect(res.status).toBe(200)],
   });
 });
 
-// === Cleanup ===
+// === Cleanup (via level runner) ===
 
-feature("scenarioWithCleanup()", () => {
+feature("level runner cleanup", () => {
   let cleaned = false;
 
-  scenarioWithCleanup("runs cleanup after assertion", {
+  component("runs cleanup after assertion", {
     given: ["an open resource", () => {
       cleaned = false;
       return { resource: "open" };
@@ -75,16 +74,16 @@ feature("scenarioWithCleanup()", () => {
     cleanup: (ctx) => { cleaned = true; },
   });
 
-  scenario("cleanup was executed", {
+  unit("cleanup was executed", {
     when: ["checking cleanup flag", () => cleaned],
     then: ["it was cleaned up", (result) => expect(result).toBe(true)],
   });
 });
 
-// === Scenario outline (table-driven) ===
+// === Outline (table-driven) ===
 
-feature("scenarioOutline()", () => {
-  scenarioOutline(
+feature("outline()", () => {
+  unit.outline(
     "adds numbers correctly",
     [
       { name: "positive numbers", a: 2, b: 3, expected: 5 },
@@ -99,11 +98,34 @@ feature("scenarioOutline()", () => {
   );
 });
 
+feature("outline() with cleanup", () => {
+  let cleanupCalls = 0;
+
+  unit.outline(
+    "cleans up per row",
+    [
+      { name: "row A", value: 1 },
+      { name: "row B", value: 2 },
+    ],
+    {
+      given: (row) => row.value as number,
+      when:  (ctx) => ctx * 2,
+      then:  (result, _ctx, row) => expect(result).toBe((row.value as number) * 2),
+      cleanup: () => { cleanupCalls++; },
+    },
+  );
+
+  unit("cleanup ran for each row", {
+    when:  ["checking cleanup count", () => cleanupCalls],
+    then:  ["called twice", (count) => expect(count).toBe(2)],
+  });
+});
+
 // === Grouping ===
 
 feature("feature() and rule()", () => {
   rule("grouping works", () => {
-    scenario("rule nests inside feature", {
+    unit("rule nests inside feature", {
       then: ["nesting works", () => expect(true).toBe(true)],
     });
   });
@@ -112,7 +134,7 @@ feature("feature() and rule()", () => {
 // === Mock AI ===
 
 feature("createMockProvider()", () => {
-  scenario("tracks concurrency", {
+  component("tracks concurrency", {
     given: ["a mock provider with 50ms latency", () => createMockProvider({ latencyMs: 50 })],
     when:  ["firing 5 parallel requests", async (mock) => {
       await Promise.all(Array.from({ length: 5 }, () =>
@@ -125,9 +147,10 @@ feature("createMockProvider()", () => {
       expect(stats.maxConcurrent).toBe(5);
       expect(stats.activeRequests).toBe(0);
     }],
+    slow: true,
   });
 
-  scenario("fails after N requests", {
+  unit("fails after N requests", {
     given: ["a provider that fails after 2", () => createMockProvider({ failAfter: 2 })],
     when:  ["sending 3 requests", async (mock) => {
       await mock.complete("m", []);
@@ -140,7 +163,7 @@ feature("createMockProvider()", () => {
     }],
   });
 
-  scenario("returns OpenAI-compatible response", {
+  unit("returns OpenAI-compatible response", {
     given: ["a provider with custom response", () => createMockProvider({ response: "Hello!" })],
     when:  ["sending a request", (mock) => mock.complete("gpt-test", [])],
     then:  ["response matches OpenAI format", (result) => {
@@ -152,7 +175,7 @@ feature("createMockProvider()", () => {
 });
 
 feature("createMockAuthProfiles()", () => {
-  scenario("creates profiles for all providers", {
+  unit("creates profiles for all providers", {
     given: ["default mock profiles", () => createMockAuthProfiles()],
     when:  ["listing profile keys", (profiles) => Object.keys(profiles)],
     then:  ["all three providers present", (keys) => {
@@ -162,7 +185,7 @@ feature("createMockAuthProfiles()", () => {
     }],
   });
 
-  scenario("tokens are not expired", {
+  unit("tokens are not expired", {
     given: ["fresh mock profiles", () => createMockAuthProfiles()],
     when:  ["checking expiry", (profiles) => Object.values(profiles).every((p) => p.expires > Date.now())],
     then:  ["all tokens valid", (allValid) => expect(allValid).toBe(true)],

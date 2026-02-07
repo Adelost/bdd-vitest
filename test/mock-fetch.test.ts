@@ -1,8 +1,8 @@
-import { feature, scenario, scenarioWithCleanup, expect } from "../src/index";
+import { feature, expect, component } from "../src/index";
 import { mockFetch } from "../src/mock-fetch";
 
 feature("mockFetch", () => {
-  scenarioWithCleanup("mocks fetch with implicit 200 + JSON", {
+  component("mocks fetch with implicit 200 + JSON", {
     given: ["a mocked API", mockFetch({
       "GET https://api.example.com/users": { name: "Alice" },
     })],
@@ -16,7 +16,7 @@ feature("mockFetch", () => {
     cleanup: (mock) => mock.restore(),
   });
 
-  scenarioWithCleanup("mocks status-only response", {
+  component("mocks status-only response", {
     given: ["a 404 endpoint", mockFetch({
       "GET https://api.example.com/missing": 404,
     })],
@@ -27,7 +27,7 @@ feature("mockFetch", () => {
     cleanup: (mock) => mock.restore(),
   });
 
-  scenarioWithCleanup("sequential responses", {
+  component("sequential responses", {
     given: ["an API that flakes", mockFetch({
       "POST https://api.example.com/submit": [
         { status: 500 },
@@ -46,7 +46,7 @@ feature("mockFetch", () => {
     cleanup: (mock) => mock.restore(),
   });
 
-  scenarioWithCleanup("tracks call counts", {
+  component("tracks call counts", {
     given: ["a mocked endpoint", mockFetch({
       "GET https://api.example.com/ping": { pong: true },
     })],
@@ -62,7 +62,7 @@ feature("mockFetch", () => {
     cleanup: (mock) => mock.restore(),
   });
 
-  scenarioWithCleanup("throws on unmocked route", {
+  component("throws on unmocked route", {
     given: ["a limited mock", mockFetch({
       "GET https://api.example.com/ok": 200,
     })],
