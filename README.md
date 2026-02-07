@@ -138,6 +138,25 @@ component("handles 404", {
 });
 ```
 
+## Database tests
+
+No special API needed. `given` sets up, `cleanup` tears down:
+
+```ts
+integration("finds user by email", {
+  given: ["a seeded database", async () => {
+    const db = await createTestDb();
+    await db.users.insert({ email: "alice@test.com", name: "Alice" });
+    return db;
+  }],
+  when:    ["querying", (db) => db.users.findBy({ email: "alice@test.com" })],
+  then:    ["returns Alice", (user) => expect(user.name).toBe("Alice")],
+  cleanup: (db) => db.destroy(),
+});
+```
+
+Works with any database library. Bring your own setup.
+
 ## Table-driven
 
 ```ts
